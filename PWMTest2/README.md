@@ -7,8 +7,8 @@ I made the below change in pwm.h:
 #define PWM_0_OUT_IO_FUNC FUNC_GPIO12
 
 change to:
-#define PWM_0_OUT_IO_NUM 2
-#define PWM_0_OUT_IO_FUNC FUNC_GPIO2
+\#define PWM_0_OUT_IO_NUM 2
+\#define PWM_0_OUT_IO_FUNC FUNC_GPIO2
 
 In user_main.c:
 
