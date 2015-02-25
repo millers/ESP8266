@@ -1,0 +1,11 @@
+19:07:40 **** Build of configuration Default for project wifi-sniffer ****
+mingw32-make.exe -f C:/Users/millers/Desktop/Espressif/examples/wifi-sniffer/Makefile all 
+CC driver/uart.c
+CC user/user_main.c
+AR build/app_app.a
+LD build/app.out
+FW firmware/0x00000.bin
+FW firmware/0x40000.bin
+
+19:07:41 Build Finished (took 1s.112ms)
+

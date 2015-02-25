@@ -1,0 +1,30 @@
+#include "ets_sys.h"
+#include "osapi.h"
+#include "gpio.h"
+#include "os_type.h"
+#include "user_config.h"
+#include "user_interface.h"
+#include "driver/uart.h"
+
+os_event_t    user_procTaskQueue[user_procTaskQueueLen];
+static volatile os_timer_t channelHop_timer;
+
+static void loop(os_event_t *events);
+
+
+//Main code function
+static void ICACHE_FLASH_ATTR
+loop(os_event_t *events)
+{
+    os_delay_us(10);
+}
+
+//Init function 
+void ICACHE_FLASH_ATTR
+user_init()
+{
+    
+    //Start os task
+    system_os_task(loop, user_procTaskPrio,user_procTaskQueue, user_procTaskQueueLen);
+
+}

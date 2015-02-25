@@ -1,0 +1,79 @@
+/*
+	Shanes PWM Test
+*/
+
+#include <ets_sys.h>
+#include <osapi.h>
+#include <os_type.h>
+#include <gpio.h>
+#include "driver/uart.h"
+
+
+os_event_t    user_procTaskQueue[user_procTaskQueueLen];
+static void user_procTask(os_event_t *events);
+
+
+
+
+#define DELAY 1000 /* milliseconds */
+
+static void ICACHE_FLASH_ATTR loop(os_event_t *events);
+static void ICACHE_FLASH_ATTR
+user_procTask(os_event_t *events)
+{
+}
+
+uint16 freq = 500;
+uint8 duty = 250;
+uint8 channel = 0;
+int dir = 1;
+
+
+
+void user_init(void)
+{
+
+	PIN_FUNC_SELECT(PERIPHS_IO_MUX_GPIO2_U, FUNC_GPIO2);
+	GPIO_OUTPUT_SET(2, 1);
+	os_delay_us(10000);
+	GPIO_OUTPUT_SET(2, 0);
+	os_delay_us(10000);
+
+	//pwm_set_duty(duty, channel);
+	pwm_init(freq, duty);
+	//pwm_start();
+
+    system_os_task(user_procTask, user_procTaskPrio,user_procTaskQueue, user_procTaskQueueLen);
+
+}
+
+
+static void ICACHE_FLASH_ATTR loop(os_event_t *events) {
+
+  // DO STUFF
+	duty = duty + dir;
+
+	pwm_set_duty(duty, 0);
+	pwm_set_duty(duty, 1);
+	pwm_set_duty(duty, 2);
+	pwm_start();
+	if (duty > 490) {
+		dir = dir * -1;
+	}
+	if (duty < 2) {
+		dir = dir * -1;
+	}
+	os_delay_us(100);
+	//system_os_post(user_procTaskPrio, 0, 0 );
+}
+
+
+
+
+
+
+
+
+
+
+

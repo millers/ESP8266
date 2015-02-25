@@ -1,0 +1,16 @@
+19:08:03 **** Build of configuration Default for project PWMTest ****
+mingw32-make.exe -f C:/Users/millers/Desktop/Espressif/Workspace/PWMTest/Makefile all 
+CC user/user_main.c
+user/user_main.c:21:34: error: 'user_procTaskQueueLen' undeclared here (not in a function)
+ os_event_t    user_procTaskQueue[user_procTaskQueueLen];
+                                  ^
+user/user_main.c: In function 'user_init':
+user/user_main.c:54:35: error: 'user_procTaskPrio' undeclared (first use in this function)
+     system_os_task(user_procTask, user_procTaskPrio,user_procTaskQueue, user_procTaskQueueLen);
+                                   ^
+user/user_main.c:54:35: note: each undeclared identifier is reported only once for each function it appears in
+C:/Users/millers/Desktop/Espressif/Workspace/PWMTest/Makefile:146: recipe for target 'build/user/user_main.o' failed
+mingw32-make.exe: *** [build/user/user_main.o] Error 1
+
+19:08:03 Build Finished (took 189ms)
+

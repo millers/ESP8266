@@ -1,0 +1,63 @@
+#include "ets_sys.h"
+#include "osapi.h"
+#include "gpio.h"
+#include "os_type.h"
+#include "user_config.h"
+#include "user_interface.h"
+#include "driver/uart.h"
+
+os_event_t    user_procTaskQueue[user_procTaskQueueLen];
+static volatile os_timer_t channelHop_timer;
+LOCAL os_timer_t hello_timer;
+
+static void loop(os_event_t *events);
+
+int duty = 500;
+int dir = 1;
+uint8 PWM_CH[] = {0,0,0};
+uint16 freq = 1000;
+
+//Main code function
+static void ICACHE_FLASH_ATTR
+loop(os_event_t *events)
+{
+	duty = duty + dir;
+
+	pwm_set_duty(PWM_CH[2], 0);
+
+	pwm_start();
+	PWM_CH[2]++;
+	if(PWM_CH[2]>99)
+	   PWM_CH[2] =0;
+    os_delay_us(10000);
+    ets_uart_printf("Duty: %d",PWM_CH[2]);
+}
+
+LOCAL void ICACHE_FLASH_ATTR hello_cb(void *arg)
+{
+	ets_uart_printf("Hello World!\r\n");
+}
+
+//Init function 
+void ICACHE_FLASH_ATTR
+user_init()
+{
+	uart_init(BIT_RATE_115200,BIT_RATE_115200);
+	PIN_FUNC_SELECT(PERIPHS_IO_MUX_GPIO2_U, FUNC_GPIO2);
+	GPIO_OUTPUT_SET(2, 1);
+	os_delay_us(10000);
+	GPIO_OUTPUT_SET(2, 0);
+	os_delay_us(10000);
+	ets_uart_printf("pwm_init");
+	pwm_init(freq, PWM_CH[2]);
+
+	os_timer_disarm(&hello_timer);
+	// os_timer_setfn(ETSTimer *ptimer, ETSTimerFunc *pfunction, void *parg)
+	os_timer_setfn(&hello_timer, (os_timer_func_t *)hello_cb, (void *)0);
+	// void os_timer_arm(ETSTimer *ptimer,uint32_t milliseconds, bool repeat_flag)
+	os_timer_arm(&hello_timer, DELAY, 1);
+    //Start os task
+	ets_uart_printf("system_os_task");
+    system_os_task(loop, user_procTaskPrio,user_procTaskQueue, user_procTaskQueueLen);
+    ets_uart_printf("user_init complete");
+}

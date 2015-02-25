@@ -1,0 +1,196 @@
+#include "mem.h"
+#include "c_types.h"
+#include "user_interface.h"
+#include "ets_sys.h"
+#include "driver/uart.h"
+#include "osapi.h"
+#include "espconn.h"
+#include <gpio.h>
+
+#define SSID		"Telstra6D1E79"
+#define PASSWORD	"04CCBCEC36"
+#define WIFI_CLIENTSSID		"Telstra6D1E79"
+#define WIFI_CLIENTPASSWORD	"04CCBCEC36"
+
+#define PORT 7777
+#define SERVER_TIMEOUT 1000
+#define MAX_CONNS 5
+#define MAX_FRAME 2000
+
+#define procTaskPrio        0
+#define procTaskQueueLen    1
+
+
+static volatile os_timer_t some_timer;
+static struct espconn *pUdpServer;
+
+
+
+//Note to self.  In future consider looking at this: http://pastebin.com/6eLxSrNz
+
+
+//Tasks that happen all the time.
+
+os_event_t    procTaskQueue[procTaskQueueLen];
+static void ICACHE_FLASH_ATTR
+procTask(os_event_t *events)
+{
+	system_os_post(procTaskPrio, 0, 0 );
+	if( events->sig == 0 && events->par == 0 )
+	{
+		//Idle Event.
+	}
+}
+
+
+//Timer event.
+static void ICACHE_FLASH_ATTR
+ myTimer(void *arg)
+{
+	/*
+	struct station_config stationConf;
+	int wifiStatus;
+	char temp;
+
+
+	wifi_station_get_config(&stationConf);
+	wifiStatus = wifi_station_get_connect_status();
+	//os_sprintf(temp,"%d\r\n",wifiStatus);
+	//ets_uart_printf(wifiStatus); // this fucks up
+	switch (wifiStatus)
+	{
+		case STATION_WRONG_PASSWORD: ets_uart_printf("Wrong Password\r\n"); break;
+		case STATION_NO_AP_FOUND: ets_uart_printf("No AP Found\r\n"); break;
+		default: break;
+	}
+	ets_uart_printf("\r\n.");
+	ets_uart_printf(stationConf.ssid);
+	ets_uart_printf(".");
+*/
+}
+
+
+//Called when new packet comes in.
+static void ICACHE_FLASH_ATTR
+udpserver_recv(void *arg, char *pusrdata, unsigned short len)
+{
+
+	struct station_config stationConf;
+	struct espconn *pespconn = (struct espconn *)arg;
+	uint8_t buffer[MAX_FRAME];
+	char temp;
+
+	//Make sure watchdog is disabled.  WS2812's take a while and can mess it up.
+	ets_wdt_disable();
+	os_intr_lock();
+	os_intr_unlock();
+	ets_sprintf( buffer, "%d:%s\r\n", len, pusrdata );
+	uart0_sendStr(buffer);
+
+	if (strcmp("1",pusrdata) == 0)  {
+		ets_uart_printf("LED On\r\n");
+		GPIO_OUTPUT_SET(2,1);
+	} else if (strcmp("c", pusrdata) == 0) {
+		ets_uart_printf("Getting....\r\n");
+		wifi_station_get_config(&stationConf);
+		ets_uart_printf("Got\r\n");
+		//os_sprintf(temp, "SSID: %u\r\n", stationConf.ssid);
+		//ets_uart_printf("In buffer");
+		ets_uart_printf(stationConf.ssid);
+		ets_uart_printf("\r\n");
+		//os_sprintf(temp, "Password: %u\r\n", stationConf.password);
+		ets_uart_printf(stationConf.password);
+	} else {
+		ets_uart_printf("LED Off\r\n");
+		GPIO_OUTPUT_SET(2,0);
+	}
+}
+
+void ICACHE_FLASH_ATTR at_recvTask()
+{
+	//Called from UART.
+}
+
+
+void user_init(void)
+{
+	struct station_config stationConf;
+	char temp;
+	os_delay_us(1000000);
+	uart_init(BIT_RATE_115200, BIT_RATE_115200);
+	//int wifiMode = wifi_get_opmode();
+	PIN_FUNC_SELECT(PERIPHS_IO_MUX_GPIO2_U, FUNC_GPIO2);
+
+/*	wifi_set_opmode( 0x1 );
+
+	os_memset(stationConf.ssid, 0, sizeof(stationConf.ssid));
+	os_memset(stationConf.password, 0, sizeof(stationConf.password));
+
+	ets_uart_printf("Setting config\r\n");
+	//os_strncpy((char*)stationConf.ssid, SSID, 32); //I've tried memcpy and I got the same issue, I even print the password to uart0 to compare to what I sent over TCP and it's the same password, it just doesn't connect
+	//os_strncpy((char*)stationConf.password, PASSWORD, 64); // I also tried different access points/hotspots and nothing.
+
+	at_dataStrCpy(&stationConf.ssid, SSID, 32);
+	at_dataStrCpy(&stationConf.password, PASSWORD, 64);
+
+	//ets_uart_printf("Setting config\r\n");
+	//os_sprintf(stationConf.ssid, "%s", SSID);
+	//os_sprintf(stationConf.password, "%s", PASSWORD);
+
+	ets_uart_printf("Config set\r\n");
+
+	ETS_UART_INTR_DISABLE();
+	wifi_station_set_config(&stationConf);
+	ETS_UART_INTR_ENABLE();
+
+	ets_uart_printf("Station set\r\n"); */
+
+	struct station_config *config = (struct station_config *)zalloc(sizeof(struct station_config));
+	os_sprintf(config->ssid, SSID);
+	os_sprintf(config->password, PASSWORD);
+	wifi_station_set_config(config);
+
+
+	ets_uart_printf(stationConf.ssid);
+	ets_uart_printf("\r\n");
+	ets_uart_printf(stationConf.password);
+
+	//wifi_station_disconnect();
+	//wifi_station_connect();
+
+
+
+    pUdpServer = (struct espconn *)os_zalloc(sizeof(struct espconn));
+	ets_memset( pUdpServer, 0, sizeof( struct espconn ) );
+	espconn_create( pUdpServer );
+	pUdpServer->type = ESPCONN_UDP;
+	pUdpServer->proto.udp = (esp_udp *)os_zalloc(sizeof(esp_udp));
+	pUdpServer->proto.udp->local_port = 7777;
+	espconn_regist_recvcb(pUdpServer, udpserver_recv);
+
+	//wifi_station_dhcpc_start();
+
+	if( espconn_create( pUdpServer ) )
+	{
+		while(1) { uart0_sendStr( "\r\nFAULT\r\n" ); }
+	}
+
+	//XXX TODO figure out how to safely re-allow this.
+	ets_wdt_disable();
+
+	//char outbuffer[] = { 0xff, 0x00, 0x00 };
+
+	//Add a process
+	system_os_task(procTask, procTaskPrio, procTaskQueue, procTaskQueueLen);
+
+//	uart0_sendStr("\r\nCustom Server\r\n");
+
+
+	//Timer example
+	os_timer_disarm(&some_timer);
+	os_timer_setfn(&some_timer, (os_timer_func_t *)myTimer, NULL);
+	os_timer_arm(&some_timer, 500, 1);
+
+	system_os_post(procTaskPrio, 0, 0 );
+}
+

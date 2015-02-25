@@ -1,0 +1,93 @@
+/*
+	Shanes PWM Test
+*/
+
+#include <ets_sys.h>
+#include <osapi.h>
+#include <os_type.h>
+#include <gpio.h>
+#include "driver/uart.h"
+
+
+#define DELAY 1000 /* milliseconds */
+
+LOCAL os_timer_t hello_timer;
+//os_event_t user_procTaskQueue[user_procTaskQueueLen];
+static void user_procTask(os_event_t *events);
+
+extern int ets_uart_printf(const char *fmt, ...);
+static void ICACHE_FLASH_ATTR loop(os_event_t *events);
+static void ICACHE_FLASH_ATTR
+user_procTask(os_event_t *events)
+{
+}
+
+uint16 freq = 500;
+uint8 duty = 250;
+uint8 channel = 0;
+int dir = 1;
+
+
+LOCAL void ICACHE_FLASH_ATTR hello_cb(void *arg)
+{
+	ets_uart_printf("hello cunt\r");
+	ets_uart_printf("%d\r%d\r%d\r\n",freq, duty, channel);
+}
+
+void user_init(void)
+{
+//	// Configure the UART
+//	uart_init(BIT_RATE_115200, BIT_RATE_115200);
+//	// Set up a timer to send the message
+//	// os_timer_disarm(ETSTimer *ptimer)
+//	os_timer_disarm(&hello_timer);
+//	// os_timer_setfn(ETSTimer *ptimer, ETSTimerFunc *pfunction, void *parg)
+//	os_timer_setfn(&hello_timer, (os_timer_func_t *)hello_cb, (void *)0);
+//	// void os_timer_arm(ETSTimer *ptimer,uint32_t milliseconds, bool repeat_flag)
+//	os_timer_arm(&hello_timer, DELAY, 1);
+
+
+	PIN_FUNC_SELECT(PERIPHS_IO_MUX_GPIO2_U, FUNC_GPIO2);
+	GPIO_OUTPUT_SET(2, 1);
+	os_delay_us(10000);
+	GPIO_OUTPUT_SET(2, 0);
+	os_delay_us(10000);
+
+	//pwm_set_duty(duty, channel);
+	pwm_init(freq, duty);
+	//pwm_start();
+
+    system_os_task(user_procTask, user_procTaskPrio,user_procTaskQueue, user_procTaskQueueLen);
+
+}
+
+
+static void ICACHE_FLASH_ATTR loop(os_event_t *events) {
+
+  // DO STUFF
+	duty = duty + dir;
+
+	pwm_set_duty(duty, 0);
+	pwm_set_duty(duty, 1);
+	pwm_set_duty(duty, 2);
+	pwm_start();
+	if (duty > 490) {
+		dir = dir * -1;
+	}
+	if (duty < 2) {
+		dir = dir * -1;
+	}
+	os_delay_us(100);
+	//system_os_post(user_procTaskPrio, 0, 0 );
+}
+
+
+
+
+
+
+
+
+
+
+
